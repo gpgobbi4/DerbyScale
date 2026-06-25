@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Igualación de Pesos - Torneo Profesional</title>
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #111827, #1f2937, #374151);
+      color: #f9fafb;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .app { max-width: 1100px; margin: auto; }
+    .header { text-align: center; margin-bottom: 24px; }
+    .header h1 { margin: 0; font-size: 32px; color: #ffffff; }
+    
+    .panel {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 18px;
+      padding: 22px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+      margin-bottom: 22px;
+    }
+    .unit-selector { display: flex; justify-content: center; gap: 15px; margin-bottom: 15px; }
+    .unit-btn {
+      background: #374151; color: #cbd5e1; border: 2px solid #4b5563;
+      padding: 8px 20px; border-radius: 10px; font-weight: bold; cursor: pointer;
+    }
+    .unit-btn.active { background: #2563eb; color: white; border-color: #38bdf8; }
+    
+    .form-grid { display: grid; grid-template-columns: 1.5fr 1.5fr 1fr auto auto; gap: 12px; align-items: end; }
+    label { display: block; font-size: 13px; color: #d1d5db; margin-bottom: 6px; }
+    input[type="text"], select {
+      width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid #4b5563;
+      background: #111827; color: white; outline: none; font-size: 15px;
+    }
+    .check-box { height: 44px; display: flex; align-items: center; gap: 8px; white-space: nowrap; color: #e5e7eb; }
+    
+    button { border: none; border-radius: 12px; padding: 12px 18px; cursor: pointer; font-weight: bold; font-size: 14px; transition: all 0.2s ease; }
+    .btn-primary { background: linear-gradient(135deg, #06b6d4, #2563eb); color: white; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(37,99,235,0.35); }
+    .btn-success { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; width: 100%; margin-top: 15px; font-size: 16px; }
+    .btn-success:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(34,197,94,0.35); }
+    .btn-random { background: linear-gradient(135deg, #a855f7, #7c3aed); color: white; width: 100%; font-size: 15px; }
+    .btn-nav { background: #4b5563; color: white; }
+    .btn-danger { background: #ef4444; color: white; margin-top: 10px; }
+    
+    .btn-edit { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 4px 10px; font-size: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .btn-edit:hover { background: #2563eb; color: white; }
+
+    .btn-win { background: #1b2735; color: #9ca3af; border: 1px solid #374151; padding: 6px 12px; font-size: 12px; border-radius: 6px; margin-top: 5px; }
+    .btn-win:hover { background: #2563eb; color: white; }
+    .btn-win.selected { background: #16a34a; color: white; border-color: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,0.5); }
+    
+    .section-title { margin: 0 0 12px; font-size: 21px; color: #ffffff; }
+    .participants { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+    .stud-card { background: rgba(17,24,39,0.85); border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; padding: 15px; }
+    .stud-card h3 { margin: 0 0 10px; color: #facc15; font-size: 19px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px; }
+    .gallo-item { background: rgba(255, 255, 255, 0.05); padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    
+    .tag-tuerto { background: rgba(239, 68, 68, 0.25); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.5); padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: bold; margin-left: 6px; display: inline-block; }
+
+    .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+    .match-card { border-radius: 18px; padding: 16px; background: #111827; border: 1px solid rgba(255,255,255,0.12); position: relative; overflow: hidden; }
+    .match-card::before { content: ""; position: absolute; left: 0; top: 0; width: 7px; height: 100%; background: #3b82f6; }
+    .match-card.sorteo-sorteado::before { background: #a855f7; }
+    .match-card.cruce-mixto::before { content: ""; background: linear-gradient(#facc15, #ef4444); } 
+
+    .match-head { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 12px; }
+    .badge { padding: 5px 9px; border-radius: 999px; font-size: 11px; font-weight: bold; background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.35); }
+    .badge-sorteo { background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.35); }
+    .badge-mixto { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); }
+
+    .fighter { padding: 10px; border-radius: 12px; background: rgba(255,255,255,0.06); margin-bottom: 9px; display: flex; justify-content: space-between; align-items: center; }
+    .fighter strong { color: #ffffff; font-size: 15px; }
+    .fighter span { color: #cbd5e1; font-size: 13px; }
+    .vs { text-align: center; font-weight: bold; color: #93c5fd; margin: 6px 0; }
+    .alert-card { background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); padding: 14px; border-radius: 12px; margin-bottom: 12px; color: #fef08a; }
+    .unpaired { background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 14px; padding: 12px; color: #fef08a; margin-bottom: 8px; }
+    .empty { color: #d1d5db; font-style: italic; }
+    .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .round-title { background: #1e3a8a; padding: 8px 16px; border-radius: 8px; font-size: 18px; font-weight: bold; color: white; }
+    .summary { display: flex; gap: 10px; margin-bottom: 15px; }
+    .summary-card { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; flex: 1; text-align: center; font-size: 14px; }
+    .summary-card strong { display: block; font-size: 20px; color: #38bdf8; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <h1>Igualación de Pesos - Modo Torneo</h1>
+  </div>
+
+  <!-- Selección Unidad -->
+  <div class="panel" id="unitPanel">
+    <label style="text-align:center; display:block; font-size:14px; margin-bottom:10px;">Unidad de Medida Oficial del Torneo:</label>
+    <div class="unit-selector">
+      <button class="unit-btn active" id="unitLbs" onclick="cambiarUnidad('lbs')">Libras (lbs) [Tolerancia Max Δ 0.02]</button>
+      <button class="unit-btn" id="unitKg" onclick="cambiarUnidad('kg')">Kilogramos (kg) [Tolerancia Max Δ 56g / 0.056]</button>
+    </div>
+  </div>
+
+  <!-- Formulario de Entrada -->
+  <div class="panel" id="inputPanel">
+    <div class="form-grid">
+      <div>
+        <label>Nombre del Stud</label>
+        <input type="text" id="studName" placeholder="Ej: Guillermo">
+      </div>
+      <div>
+        <label>Nombre del Gallo</label>
+        <input type="text" id="galloName" placeholder="Ej: El Trueno">
+      </div>
+      <div>
+        <label id="weightLabel">Peso (lbs)</label>
+        <input type="text" id="weight" placeholder="Ej: 7.09">
+      </div>
+      <div class="check-box">
+        <input type="checkbox" id="tuerto">
+        <span>👁️ Tuerto</span>
+      </div>
+      <button class="btn-primary" onclick="addGallo()">Agregar Gallo</button>
+    </div>
+    <button class="btn-success" onclick="iniciarTorneo()">Iniciar Torneo e Igualar</button>
+    <!-- CORREGIDO: Llama directo a la función con clave -->
+    <button class="btn-danger" onclick="limpiarTodoConClave()">Limpiar Todo</button>
+  </div>
+
+  <!-- Registro de Participantes -->
+  <div class="panel" id="participantesPanel">
+    <h2 class="section-title">Participantes Registrados</h2>
+    <div id="studList" class="participants">
+      <div class="empty">No hay ejemplares cargados en el sistema.</div>
+    </div>
+  </div>
+
+  <!-- Sorteos para impares de igual peso exacto -->
+  <div id="sorteoPanel" class="panel" style="display: none;">
+    <h2 class="section-title" style="color: #a855f7;">Sorteo Obligatorio (Pesos Idénticos Impares)</h2>
+    <div id="sorteoAlerts"></div>
+    <button class="btn-random" onclick="ejecutarSorteoDeImpares()">Mezclar y Agregar a Cruces Oficiales 🎲</button>
+  </div>
+
+  <!-- Panel de Resultados -->
+  <div class="panel" id="resultadoPanel" style="display: none;">
+    <div class="nav-bar">
+      <button class="btn-nav" onclick="regresarRonda()">← Volver / Editar Fase Anterior</button>
+      <div id="roundIndicator" class="round-title">Ronda 1</div>
+    </div>
+    <div id="result"></div>
+    <button class="btn-success" id="btnAvanzar" style="display:none;" onclick="avanzarDeRonda()">Confirmar Resultados y Avanzar Ronda →</button>
+  </div>
+</div>
+
+<script>
+  let gallosTorneo = []; 
+  let historialRondas = []; 
+  let peleasActuales = [];
+  let sinParejaActuales = [];
+  let crucesDelSorteo = [];
+  
+  let idCounter = 0;
+  let rondaActual = 1;
+  let unidadMedida = 'lbs';
+  let maxDiffMismaCat = 0.02; 
+  const CLAVE_SEGURIDAD = "1234";
+
+  function cambiarUnidad(unidad) {
+    unidadMedida = unidad;
+    if(unidad === 'lbs') {
+      maxDiffMismaCat = 0.02;
+      document.getElementById("weightLabel").innerText = "Peso (lbs)";
+      document.getElementById("weight").placeholder = "Ej: 7.09";
+      document.getElementById("unitLbs").classList.add("active");
+      document.getElementById("unitKg").classList.remove("active");
+    } else {
+      maxDiffMismaCat = 0.056; 
+      document.getElementById("weightLabel").innerText = "Peso (kg)";
+      document.getElementById("weight").placeholder = "Ej: 3.150";
+      document.getElementById("unitKg").classList.add("active");
+      document.getElementById("unitLbs").classList.remove("active");
+    }
+  }
+
+  function addGallo() {
+    const studName = document.getElementById("studName").value.trim();
+    const galloName = document.getElementById("galloName").value.trim();
+    const rawWeight = document.getElementById("weight").value.trim();
+    const tuerto = document.getElementById("tuerto").checked;
+
+    if (!studName || !galloName || !rawWeight) {
+      alert("Por favor complete todos los datos del gallo.");
+      return;
+    }
+
+    const pesoNum = parseFloat(rawWeight.replace(",", "."));
+    if (isNaN(pesoNum) || pesoNum <= 0) {
+      alert("Ingrese un número de peso válido.");
+      return;
+    }
+
+    gallosTorneo.push({
+      id: idCounter++,
+      stud: studName,
+      nombre: galloName,
+      peso: pesoNum,
+      tuerto: tuerto,
+      usado: false,
+      ganadorId: null
+    });
+
+    renderStuds();
+    document.getElementById("galloName").value = "";
+    document.getElementById("weight").value = "";
+    document.getElementById("tuerto").checked = false;
+    document.getElementById("galloName").focus();
+  }
+
+  // CORREGIDO: Ahora sí funciona y valida correctamente con la contraseña 1234
+  function editarGallo(idGallo) {
+    const clave = prompt("Ingrese la contraseña para editar este registro:");
+    if (clave !== CLAVE_SEGURIDAD) {
+      alert("Contraseña incorrecta. Acción cancelada.");
+      return;
+    }
+
+    const index = gallosTorneo.findIndex(g => g.id === idGallo);
+    if (index !== -1) {
+      const g = gallosTorneo[index];
+      
+      // Devolver los valores a las cajas de texto de arriba
+      document.getElementById("studName").value = g.stud;
+      document.getElementById("galloName").value = g.nombre;
+      document.getElementById("weight").value = g.peso;
+      document.getElementById("tuerto").checked = g.tuerto;
+      
+      // Quitarlo del arreglo para que se guarde de nuevo al presionar el botón "Agregar"
+      gallosTorneo.splice(index, 1);
+      renderStuds();
+      
+      // Foco automático en el formulario
+      document.getElementById("studName").focus();
+    }
+  }
+
+  function renderStuds() {
+    const contenedor = document.getElementById("studList");
+    if (gallosTorneo.length === 0) {
+      contenedor.innerHTML = `<div class="empty">No hay ejemplares cargados en el sistema.</div>`;
+      return;
+    }
+    let studsGroup = {};
+    gallosTorneo.forEach(g => {
+      if (!studsGroup[g.stud]) studsGroup[g.stud] = [];
+      studsGroup[g.stud].push(g);
+    });
+    let html = "";
+    for (let stud in studsGroup) {
+      html += `<div class="stud-card"><h3>${stud}</h3>`;
+      studsGroup[stud].forEach(g => {
+        html += `
+          <div class="gallo-item">
+            <div>
+              <strong>${g.nombre}</strong> - ${g.peso.toFixed(3)} ${unidadMedida}
+              ${g.tuerto ? `<span class="tag-tuerto">👁️ Tuerto</span>` : ""}
+            </div>
+            <!-- CORREGIDO: El botón ahora tiene el evento onclick correctamente enlazado -->
+            <button class="btn-edit" onclick="editarGallo(${g.id})">✏️ Editar</button>
+          </div>
+        `;
+      });
+      html += `</div>`;
+    }
+    contenedor.innerHTML = html;
+  }
+
+  function analizarImparesExactos(listaActiva) {
+    let conteo = {};
+    listaActiva.forEach(g => {
+      let clave = `${g.peso.toFixed(3)}_${g.tuerto ? 'T' : 'N'}`;
+      if (!conteo[clave]) conteo[clave] = [];
+      conteo[clave].push(g);
+    });
+
+    let htmlAlerts = "";
+    let hayImpares = false;
+
+    for (let clave in conteo) {
+      let grupo = conteo[clave];
+      if (grupo.length % 2 !== 0 && grupo.length > 1) {
+        hayImpares = true;
+        let pesoLabel = parseFloat(clave.split("_")[0]).toFixed(3);
+        let catLabel = clave.split("_")[1] === 'T' ? 'Tuertos' : 'Normales';
+        htmlAlerts += `
+          <div class="alert-card">
+            ⚠️ <strong>Grupo Impar:</strong> Se detectaron ${grupo.length} ejemplares de peso idéntico: <strong>${pesoLabel} ${unidadMedida}</strong> (${catLabel}). Pulse abajo para sortearlos directamente.
+          </div>
+        `;
+      }
+    }
+    document.getElementById("sorteoPanel").style.display = hayImpares ? "block" : "none";
+    if (hayImpares) document.getElementById("sorteoAlerts").innerHTML = htmlAlerts;
+  }
+
+  function iniciarTorneo() {
+    if (gallosTorneo.length < 2) {
+      alert("Cargue mínimo 2 participantes para iniciar.");
+      return;
+    }
+    document.getElementById("inputPanel").style.display = "none";
+    document.getElementById("unitPanel").style.display = "none";
+    document.getElementById("participantesPanel").style.display = "none";
+    document.getElementById("resultadoPanel").style.display = "block";
+    
+    rondaActual = 1;
+    historialRondas = [];
+    crucesDelSorteo = [];
+    document.getElementById("roundIndicator").innerText = `Ronda 1`;
+    
+    analizarImparesExactos(gallosTorneo);
+    igualar(gallosTorneo);
+  }
+
+  function ejecutarSorteoDeImpares() {
+    crucesDelSorteo = [];
+    let listaFase = obtenerListaRondaActual();
+    listaFase.forEach(g => g.usado = false);
+
+    let conteo = {};
+    listaFase.forEach(g => {
+      let clave = `${g.peso.toFixed(3)}_${g.tuerto ? 'T' : 'N'}`;
+      if (!conteo[clave]) conteo[clave] = [];
+      conteo[clave].push(g);
+    });
+
+    for (let clave in conteo) {
+      let grupo = conteo[clave];
+      if (grupo.length % 2 !== 0 && grupo.length > 1) {
+        let listaMezclada = [...grupo].sort(() => Math.random() - 0.5);
+        while (listaMezclada.length > 1) {
+          let g1 = listaMezclada.pop();
+          let g2 = listaMezclada.pop();
+          g1.usado = true; g2.usado = true;
+          crucesDelSorteo.push({
+            idCruce: 'srt_' + Math.random().toString(36).substr(2, 5),
+            a: g1, b: g2, diff: 0, tipo: g1.tuerto ? "Tuerto 🆚 Tuerto" : "Normal 🆚 Normal",
+            esSorteo: true, esMixto: false, ganadorId: null
+          });
+        }
+        if (listaMezclada.length === 1) {
+          listaMezclada.pop().usado = true; 
+        }
+      }
+    }
+    document.getElementById("sorteoPanel").style.display = "none";
+    igualar(listaFase, true);
+  }
+
+  function obtenerListaRondaActual() {
+    if (rondaActual === 1) return gallosTorneo;
+    let anterior = historialRondas[rondaActual - 2];
+    let clasificados = [];
+    anterior.peleas.forEach(p => {
+      let winner = (p.ganadorId === p.a.id) ? p.a : p.b;
+      clasificados.push(JSON.parse(JSON.stringify(winner)));
+    });
+    anterior.libres.forEach(l => {
+      clasificados.push(JSON.parse(JSON.stringify(l)));
+    });
+    return clasificados;
+  }
+
+  function igualar(listaAProcesar, vieneDeSorteo = false) {
+    if (!vieneDeSorteo) {
+      listaAProcesar.forEach(g => { g.usado = false; g.ganadorId = null; });
+      peleasActuales = [];
+    } else {
+      peleasActuales = [...crucesDelSorteo];
+    }
+
+    procesarDiferenciasMismaCategoria(listaAProcesar, peleasActuales, true);
+    procesarDiferenciasMismaCategoria(listaAProcesar, peleasActuales, false);
+    procesarCrucesMixtosConVentaja(listaAProcesar, peleasActuales);
+
+    sinParejaActuales = listaAProcesar.filter(g => !g.usado);
+    renderResultadosTorneo();
+  }
+
+  function procesarDiferenciasMismaCategoria(lista, peleas, esTuerto) {
+    let filtrados = lista.filter(g => g.tuerto === esTuerto && !g.usado);
+    let combinaciones = [];
+
+    for (let i = 0; i < filtrados.length; i++) {
+      for (let j = i + 1; j < filtrados.length; j++) {
+        if (filtrados[i].stud === filtrados[j].stud) continue;
+        let diff = Math.abs(filtrados[i].peso - filtrados[j].peso);
+        if (diff <= (maxDiffMismaCat + 0.0001)) { 
+          combinaciones.push({ a: filtrados[i], b: filtrados[j], diff: diff });
+        }
+      }
+    }
+    combinaciones.sort((x, y) => x.diff - y.diff);
+
+    combinaciones.forEach(c => {
+      let realA = lista.find(g => g.id === c.a.id);
+      let realB = lista.find(g => g.id === c.b.id);
+      if (realA && realB && !realA.usado && !realB.usado) {
+        realA.usado = true; realB.usado = true;
+        peleas.push({
+          idCruce: 'std_' + Math.random().toString(36).substr(2, 5),
+          a: realA, b: realB, diff: c.diff,
+          tipo: esTuerto ? "Tuerto 🆚 Tuerto" : "Normal 🆚 Normal",
+          esSorteo: false, esMixto: false, ganadorId: null
+        });
+      }
+    });
+  }
+
+  function procesarCrucesMixtosConVentaja(lista, peleas) {
+    let tuertosLibres = lista.filter(g => g.tuerto && !g.usado);
+    let normalesLibres = lista.filter(g => !g.tuerto && !g.usado);
+    let combinacionesMixtas = [];
+
+    const desfaseExacto = maxDiffMismaCat; 
+    const margenTolerancia = 0.001; 
+
+    tuertosLibres.forEach(t => {
+      normalesLibres.forEach(n => {
+        if (t.stud === n.stud) return;
+        
+        let diferenciaPeso = t.peso - n.peso; 
+        if (Math.abs(diferenciaPeso - desfaseExacto) <= margenTolerancia) {
+          combinacionesMixtas.push({ tuerto: t, normal: n, desvio: Math.abs(diferenciaPeso - desfaseExacto) });
+        }
+      });
+    });
+
+    combinacionesMixtas.sort((x, y) => x.desvio - y.desvio);
+
+    combinacionesMixtas.forEach(c => {
+      let realTuerto = lista.find(g => g.id === c.tuerto.id);
+      let realNormal = lista.find(g => g.id === c.normal.id);
+
+      if (realTuerto && realNormal && !realTuerto.usado && !realNormal.usado) {
+        realTuerto.usado = true;
+        realNormal.usado = true;
+        
+        peleas.push({
+          idCruce: 'mix_' + Math.random().toString(36).substr(2, 5),
+          a: realTuerto, 
+          b: realNormal,
+          diff: Math.abs(realTuerto.peso - realNormal.peso),
+          tipo: "Mixto Obligatorio (Tuerto 🆚 Normal)",
+          esSorteo: false, esMixto: true, ganadorId: null
+        });
+      }
+    });
+  }
+
+  function marcarGanador(idCruce, idGalloWinner) {
+    let pelea = peleasActuales.find(p => p.idCruce === idCruce);
+    if (pelea) pelea.ganadorId = idGalloWinner;
+    
+    document.querySelectorAll(`[data-cruce="${idCruce}"]`).forEach(btn => btn.classList.remove('selected'));
+    document.getElementById(`btn-win-${idGalloWinner}`).classList.add('selected');
+
+    let todosDefinidos = peleasActuales.every(p => p.ganadorId !== null);
+    document.getElementById("btnAvanzar").style.display = todosDefinidos ? "block" : "none";
+  }
+
+  function avanzarDeRonda() {
+    historialRondas[rondaActual - 1] = {
+      peleas: JSON.parse(JSON.stringify(peleasActuales)),
+      libres: JSON.parse(JSON.stringify(sinParejaActuales))
+    };
+
+    let clasificados = [];
+    peleasActuales.forEach(p => {
+      let winner = (p.ganadorId === p.a.id) ? p.a : p.b;
+      clasificados.push(JSON.parse(JSON.stringify(winner)));
+    });
+    sinParejaActuales.forEach(l => {
+      clasificados.push(JSON.parse(JSON.stringify(l)));
+    });
+
+    let normalesQuedan = clasificados.filter(g => !g.tuerto).length;
+    let tuertosQuedan = clasificados.filter(g => g.tuerto).length;
+
+    if (clasificados.length <= 1 || (normalesQuedan === 0 && tuertosQuedan <= 1) || (tuertosQuedan === 0 && normalesQuedan <= 1)) {
+      renderFinTorneo(clasificados);
+      return;
+    }
+
+    rondaActual++;
+    document.getElementById("roundIndicator").innerText = `Ronda ${rondaActual}`;
+    document.getElementById("btnAvanzar").style.display = "none";
+
+    analizarImparesExactos(clasificados);
+    igualar(clasificados);
+  }
+
+  function regresarRonda() {
+    if (rondaActual === 1) {
+      document.getElementById("inputPanel").style.display = "block";
+      document.getElementById("unitPanel").style.display = "block";
+      document.getElementById("participantesPanel").style.display = "block";
+      document.getElementById("resultadoPanel").style.display = "none";
+      document.getElementById("sorteoPanel").style.display = "none";
+    } else {
+      rondaActual--;
+      document.getElementById("roundIndicator").innerText = `Ronda ${rondaActual}`;
+      let datosPrevios = historialRondas[rondaActual - 1];
+      peleasActuales = datosPrevios.peleas;
+      sinParejaActuales = datosPrevios.libres;
+      document.getElementById("sorteoPanel").style.display = "none";
+      renderResultadosTorneo();
+      let todosDefinidos = peleasActuales.every(p => p.ganadorId !== null);
+      document.getElementById("btnAvanzar").style.display = todosDefinidos ? "block" : "none";
+    }
+  }
+
+  function renderResultadosTorneo() {
+    const result = document.getElementById("result");
+    let html = `
+      <div class="summary">
+        <div class="summary-card"><strong>${peleasActuales.length}</strong><span>Peleas Acordadas</span></div>
+        <div class="summary-card"><strong>${sinParejaActuales.length}</strong><span>Pasan Libres (Sin rival viable)</span></div>
+      </div>
+    `;
+
+    if (peleasActuales.length > 0) {
+      html += `<h3>Cruces de Combate Oficiales</h3><div class="results-grid">`;
+      peleasActuales.forEach((p) => {
+        let classA = p.ganadorId === p.a.id ? 'selected' : '';
+        let classB = p.ganadorId === p.b.id ? 'selected' : '';
+        
+        let cardClass = p.esSorteo ? 'sorteo-sorteado' : (p.esMixto ? 'cruce-mixto' : '');
+        let badgeLabel = `Δ ${p.diff.toFixed(3)} ${unidadMedida}`;
+        
+        if (p.esSorteo) badgeLabel = 'Sorteo Directo 🎲';
+        if (p.esMixto) badgeLabel = (unidadMedida === 'lbs') ? 'Mixto (Desfase Fijo 0.02 lbs) ⚖️' : 'Mixto (Desfase Fijo 56g) ⚖️';
+
+        html += `
+          <div class="match-card ${cardClass}">
+            <div class="match-head">
+              <strong>${p.tipo}</strong>
+              <span class="badge ${p.esSorteo ? 'badge-sorteo' : ''} ${p.esMixto ? 'badge-mixto' : ''}">${badgeLabel}</span>
+            </div>
+
+            <div class="fighter">
+              <div>
+                <strong>${p.a.stud}</strong> — ${p.a.nombre}
+                ${p.a.tuerto ? `<span class="tag-tuerto">👁️ Tuerto</span>` : ""}
+                <br><span>Peso: ${p.a.peso.toFixed(3)} ${unidadMedida}</span>
+              </div>
+              <button class="btn-win ${classA}" id="btn-win-${p.a.id}" data-cruce="${p.idCruce}" onclick="marcarGanador('${p.idCruce}', ${p.a.id})">🏆 Ganador</button>
+            </div>
+
+            <div class="vs">VS</div>
+
+            <div class="fighter">
+              <div>
+                <strong>${p.b.stud}</strong> — ${p.b.nombre}
+                ${p.b.tuerto ? `<span class="tag-tuerto">👁️ Tuerto</span>` : ""}
+                <br><span>Peso: ${p.b.peso.toFixed(3)} ${unidadMedida}</span>
+              </div>
+              <button class="btn-win ${classB}" id="btn-win-${p.b.id}" data-cruce="${p.idCruce}" onclick="marcarGanador('${p.idCruce}', ${p.b.id})">🏆 Ganador</button>
+            </div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+    } else {
+      html += `<div class="empty">No fue posible cerrar emparejamientos bajo las tolerancias actuales.</div>`;
+    }
+
+    html += `<h3 style="margin-top:22px;">Ejemplares Libres (A la espera de ronda)</h3>`;
+    if (sinParejaActuales.length > 0) {
+      sinParejaActuales.forEach(g => {
+        html += `
+          <div class="unpaired">
+            <strong>${g.stud}</strong> (${g.nombre}) - Peso: ${g.peso.toFixed(3)} ${unidadMedida} 
+            ${g.tuerto ? `| <span class="tag-tuerto" style="background:rgba(234,179,8,0.2); color:#fef08a; border:1px solid #eab308;">👁️ Tuerto</span>` : '| Categoría: Normal'}
+          </div>
+        `;
+      });
+      if (peleasActuales.length === 0) document.getElementById("btnAvanzar").style.display = "block";
+    } else {
+      html += `<div class="empty">Todos los ejemplares asignados a un combate.</div>`;
+    }
+    result.innerHTML = html;
+  }
+
+  function renderFinTorneo(ganadoresFinales) {
+    const result = document.getElementById("result");
+    document.getElementById("sorteoPanel").style.display = "none";
+    document.getElementById("btnAvanzar").style.display = "none";
+    document.getElementById("roundIndicator").innerText = "Fin del Torneo";
+
+    let html = `<h2 style="text-align:center;">🏆 Torneo Concluido 🏆</h2>`;
+    ganadoresFinales.forEach(g => {
+      html += `
+        <div class="panel" style="border: 2px solid #eab308; background: rgba(234,179,8,0.15); text-align:center;">
+          <h3 style="color:#eab308; margin:0 0 5px 0;">🥇 CAMPEÓN DE LA LLAVE</h3>
+          <span style="font-size:18px;"><strong>Stud:</strong> ${g.stud} — <strong>Ejemplar:</strong> ${g.nombre} ${g.tuerto ? '(👁️ Tuerto)' : '(Normal)'}</span><br>
+          <span>Peso Final: ${g.peso.toFixed(3)} ${unidadMedida}</span>
+        </div>
+      `;
+    });
+    result.innerHTML = html;
+  }
+
+  // CORREGIDO: Confirmación con clave obligatoria
+  function limpiarTodoConClave() {
+    const clave = prompt("Ingrese la contraseña para restablecer todo el torneo:");
+    if (clave !== CLAVE_SEGURIDAD) {
+      alert("Contraseña incorrecta. Acción cancelada.");
+      return;
+    }
+    
+    gallosTorneo = []; historialRondas = []; peleasActuales = []; sinParejaActuales = []; crucesDelSorteo = [];
+    idCounter = 0; rondaActual = 1;
+    document.getElementById("inputPanel").style.display = "block";
+    document.getElementById("unitPanel").style.display = "block";
+    document.getElementById("participantesPanel").style.display = "block";
+    document.getElementById("resultadoPanel").style.display = "none";
+    document.getElementById("sorteoPanel").style.display = "none";
+    renderStuds();
+  }
+</script>
+</body>
+</html>
