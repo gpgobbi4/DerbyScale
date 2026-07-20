@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Igualación por Orden de Entrada (Studs Distintos)</title>
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b, #334155);
+      color: #f8fafc;
+      min-height: 100vh;
+      padding: 12px;
+    }
+    
+    .app { max-width: 1000px; margin: auto; }
+    
+    .header { text-align: center; margin-bottom: 16px; }
+    .header h1 { margin: 0; font-size: 24px; color: #ffffff; }
+    .header p { margin: 4px 0 0; font-size: 13px; color: #94a3b8; }
+    
+    .panel {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      padding: 16px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      margin-bottom: 16px;
+    }
+
+    .unit-selector { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
+    .unit-btn {
+      flex: 1;
+      max-width: 220px;
+      background: #334155; color: #cbd5e1; border: 2px solid #475569;
+      padding: 10px 12px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;
+    }
+    .unit-btn.active { background: #2563eb; color: white; border-color: #38bdf8; }
+
+    .config-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;
+      background: rgba(0, 0, 0, 0.25); padding: 12px; border-radius: 12px; margin-bottom: 12px;
+    }
+    
+    .form-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+      gap: 10px; 
+      align-items: end; 
+    }
+
+    label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; font-weight: 600; }
+    
+    input[type="text"], input[type="number"] {
+      width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #475569;
+      background: #0f172a; color: white; outline: none; font-size: 15px;
+    }
+
+    .check-box {
+      height: 46px; display: flex; align-items: center; gap: 8px; 
+      background: #0f172a; padding: 0 12px; border-radius: 10px; border: 1px solid #475569;
+      cursor: pointer;
+    }
+    
+    button { 
+      border: none; border-radius: 10px; padding: 12px 16px; cursor: pointer; 
+      font-weight: bold; font-size: 14px; transition: all 0.2s ease;
+      touch-action: manipulation;
+    }
+    
+    .btn-primary { background: linear-gradient(135deg, #0284c7, #2563eb); color: white; width: 100%; }
+    .btn-success { background: linear-gradient(135deg, #16a34a, #15803d); color: white; width: 100%; margin-top: 12px; font-size: 16px; padding: 14px; }
+    .btn-random { background: linear-gradient(135deg, #9333ea, #7e22ce); color: white; width: 100%; font-size: 15px; margin-top: 8px; }
+    .btn-nav { background: #475569; color: white; }
+    .btn-danger { background: #dc2626; color: white; margin-top: 12px; width: 100%; }
+    
+    .btn-edit { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 6px 10px; font-size: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+    .section-title { margin: 0 0 12px; font-size: 18px; color: #ffffff; display: flex; align-items: center; justify-content: space-between; }
+    .participants { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+    
+    .stud-card { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; }
+    .stud-card h3 { margin: 0 0 8px; color: #facc15; font-size: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px; }
+    
+    .gallo-item { background: rgba(255, 255, 255, 0.04); padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+    .order-badge { background: #2563eb; color: white; font-weight: bold; padding: 2px 6px; border-radius: 6px; font-size: 11px; margin-right: 4px; }
+
+    .tag-tuerto { background: rgba(239, 68, 68, 0.25); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.5); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 4px; display: inline-block; }
+
+    .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+    .match-card { border-radius: 14px; padding: 14px; background: #0f172a; border: 1px solid rgba(255,255,255,0.12); position: relative; overflow: hidden; }
+    .match-card::before { content: ""; position: absolute; left: 0; top: 0; width: 6px; height: 100%; background: #3b82f6; }
+    .match-card.sorteo-sorteado::before { background: #a855f7; }
+    .match-card.cruce-mixto::before { background: linear-gradient(#facc15, #ef4444); } 
+
+    .match-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-bottom: 10px; }
+    .badge { padding: 4px 8px; border-radius: 999px; font-size: 11px; font-weight: bold; background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.35); }
+    .badge-sorteo { background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.35); }
+    .badge-mixto { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); }
+
+    .fighter { padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,0.05); margin-bottom: 6px; }
+    .fighter strong { color: #ffffff; font-size: 14px; }
+    .fighter span { color: #94a3b8; font-size: 12px; }
+    .vs { text-align: center; font-weight: bold; color: #38bdf8; margin: 4px 0; font-size: 12px; }
+    
+    .alert-card { background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); padding: 12px; border-radius: 10px; margin-bottom: 10px; color: #fef08a; font-size: 13px; }
+    .unpaired { background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 10px; padding: 10px; color: #fef08a; margin-bottom: 6px; font-size: 13px; }
+    .empty { color: #94a3b8; font-style: italic; font-size: 13px; }
+    .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .summary { display: flex; gap: 8px; margin-bottom: 12px; }
+    .summary-card { background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px; flex: 1; text-align: center; font-size: 12px; }
+    .summary-card strong { display: block; font-size: 18px; color: #38bdf8; }
+
+    @media (max-width: 600px) {
+      body { padding: 8px; }
+      .header h1 { font-size: 20px; }
+      .form-grid { grid-template-columns: 1fr 1fr; }
+      .form-grid .full-mobile { grid-column: span 2; }
+      .btn-success { font-size: 15px; padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <h1>Igualación por Orden de Entrada</h1>
+    <p>Solo cruces entre Studs distintos (1, 2, 3...)</p>
+  </div>
+
+  <!-- Configuración de Unidad y Tolerancias -->
+  <div class="panel" id="unitPanel">
+    <div class="unit-selector">
+      <button class="unit-btn active" id="unitLbs" onclick="cambiarUnidad('lbs')">Libras / Onzas (400-815)</button>
+      <button class="unit-btn" id="unitKg" onclick="cambiarUnidad('kg')">Gramos (1814-4053g)</button>
+    </div>
+
+    <div class="config-grid">
+      <div>
+        <label id="toleranciaLabel">Tolerancia Máxima:</label>
+        <input type="number" id="toleranciaInput" value="2" onchange="actualizarTolerancia()">
+      </div>
+      <div>
+        <label id="ventajaTuertoLabel">Ventaja Tuerto sobre Normal:</label>
+        <input type="number" id="ventajaTuertoInput" value="2" onchange="actualizarTolerancia()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulario de Anotación -->
+  <div class="panel" id="inputPanel">
+    <div class="form-grid">
+      <div>
+        <label>Nombre Stud</label>
+        <input type="text" id="studName" placeholder="Ej: Guillermo">
+      </div>
+      <div>
+        <label>Nombre Gallo</label>
+        <input type="text" id="galloName" placeholder="Ej: El Trueno">
+      </div>
+      <div>
+        <label id="weightLabel">Peso (Ej: 614 o 700)</label>
+        <input type="text" id="weight" placeholder="Ej: 614">
+      </div>
+      <div>
+        <label>Condición</label>
+        <label class="check-box">
+          <input type="checkbox" id="tuerto">
+          <span>👁️ Tuerto</span>
+        </label>
+      </div>
+      <div class="full-mobile">
+        <button class="btn-primary" onclick="addGallo()">➕ Anotar Gallo (Orden #<span id="nextOrder">1</span>)</button>
+      </div>
+    </div>
+    
+    <button class="btn-success" onclick="iniciarIgualacion()">⚡ Realizar Cruces por Orden de Entrada</button>
+    <button class="btn-danger" onclick="limpiarTodoConClave()">🗑️ Limpiar Fila Completa</button>
+  </div>
+
+  <!-- Lista de Entrada -->
+  <div class="panel" id="participantesPanel">
+    <div class="section-title">
+      <span>Planilla de Anotación</span>
+      <small style="font-size: 12px; color: #38bdf8;" id="totalRegistrados">Total: 0</small>
+    </div>
+    <div id="studList" class="participants">
+      <div class="empty">No hay ejemplares anotados en el turno.</div>
+    </div>
+  </div>
+
+  <!-- Panel Sorteo de Impares -->
+  <div id="sorteoPanel" class="panel" style="display: none;">
+    <h2 class="section-title" style="color: #a855f7;">Sorteo Obligatorio (Pesos Exactos)</h2>
+    <div id="sorteoAlerts"></div>
+    <button class="btn-random" onclick="ejecutarSorteoDeImpares()">Sortear e Igualar 🎲</button>
+  </div>
+
+  <!-- Panel de Resultados -->
+  <div class="panel" id="resultadoPanel" style="display: none;">
+    <div class="nav-bar">
+      <button class="btn-nav" onclick="volverAEditar()">← Volver a la Planilla</button>
+      <h2 style="margin:0; font-size:16px;">Peleas Oficiales</h2>
+    </div>
+    <div id="result"></div>
+  </div>
+</div>
+
+<script>
+  let gallosTorneo = []; 
+  let peleasActuales = [];
+  let sinParejaActuales = [];
+  let crucesDelSorteo = [];
+  
+  let idCounter = 0;
+  let numeroOrdenGlobal = 1;
+  
+  let unidadMedida = 'lbs';
+  let maxDiffMismaCat = 2; // 2 onzas o 59g
+  let ventajaTuerto = 2;    // 2 onzas o 59g
+  const CLAVE_SEGURIDAD = "1234";
+
+  function cambiarUnidad(unidad) {
+    unidadMedida = unidad;
+    if(unidad === 'lbs') {
+      maxDiffMismaCat = 2;
+      ventajaTuerto = 2;
+      document.getElementById("weightLabel").innerText = "Peso (Ej: 614 o 700)";
+      document.getElementById("weight").placeholder = "Ej: 614";
+      document.getElementById("unitLbs").classList.add("active");
+      document.getElementById("unitKg").classList.remove("active");
+      
+      document.getElementById("toleranciaLabel").innerText = "Tolerancia (Onzas):";
+      document.getElementById("toleranciaInput").value = "2";
+      document.getElementById("ventajaTuertoLabel").innerText = "Ventaja Tuerto (Onzas):";
+      document.getElementById("ventajaTuertoInput").value = "2";
+    } else {
+      maxDiffMismaCat = 59;
+      ventajaTuerto = 59;
+      document.getElementById("weightLabel").innerText = "Peso Gramos (Ej: 1814)";
+      document.getElementById("weight").placeholder = "Ej: 1814";
+      document.getElementById("unitKg").classList.add("active");
+      document.getElementById("unitLbs").classList.remove("active");
+
+      document.getElementById("toleranciaLabel").innerText = "Tolerancia (Gramos):";
+      document.getElementById("toleranciaInput").value = "59";
+      document.getElementById("ventajaTuertoLabel").innerText = "Ventaja Tuerto (Gramos):";
+      document.getElementById("ventajaTuertoInput").value = "59";
+    }
+  }
+
+  function actualizarTolerancia() {
+    maxDiffMismaCat = parseFloat(document.getElementById("toleranciaInput").value) || 0;
+    ventajaTuerto = parseFloat(document.getElementById("ventajaTuertoInput").value) || 0;
+  }
+
+  function parsearPesoAbsoluto(rawInput) {
+    if(!rawInput) return NaN;
+    let val = parseInt(rawInput.toString().trim(), 10);
+    if (isNaN(val) || val <= 0) return NaN;
+
+    if (unidadMedida === 'lbs') {
+      let str = val.toString();
+      let lbs = 0, oz = 0;
+
+      if (str.length === 3) {
+        lbs = parseInt(str.charAt(0), 10);
+        oz = parseInt(str.substring(1), 10);
+      } else if (str.length === 4) {
+        lbs = parseInt(str.substring(0, 2), 10);
+        oz = parseInt(str.substring(2), 10);
+      } else {
+        return NaN;
+      }
+
+      if (oz >= 16) return NaN;
+      return (lbs * 16) + oz;
+    }
+    return val;
+  }
+
+  function formatearPesoEntrada(pesoAbs) {
+    if (unidadMedida === 'lbs') {
+      let lbs = Math.floor(pesoAbs / 16);
+      let oz = pesoAbs % 16;
+      let ozStr = oz < 10 ? "0" + oz : "" + oz;
+      return `${lbs}${ozStr} (${lbs}lb ${oz}oz)`;
+    }
+    return `${pesoAbs}g`;
+  }
+
+  function addGallo() {
+    const studName = document.getElementById("studName").value.trim().toUpperCase();
+    const galloName = document.getElementById("galloName").value.trim();
+    const rawWeight = document.getElementById("weight").value.trim();
+    const tuerto = document.getElementById("tuerto").checked;
+
+    if (!studName || !galloName || !rawWeight) {
+      alert("Por favor complete todos los datos.");
+      return;
+    }
+
+    const pesoAbsoluto = parsearPesoAbsoluto(rawWeight);
+    if (isNaN(pesoAbsoluto)) {
+      alert("Formato de peso inválido.");
+      return;
+    }
+
+    gallosTorneo.push({
+      id: idCounter++,
+      orden: numeroOrdenGlobal++,
+      stud: studName,
+      nombre: galloName,
+      pesoAbs: pesoAbsoluto,
+      pesoRaw: rawWeight,
+      tuerto: tuerto,
+      usado: false
+    });
+
+    document.getElementById("nextOrder").innerText = numeroOrdenGlobal;
+    renderStuds();
+    
+    document.getElementById("galloName").value = "";
+    document.getElementById("weight").value = "";
+    document.getElementById("tuerto").checked = false;
+    document.getElementById("galloName").focus();
+  }
+
+  function editarGallo(idGallo) {
+    const clave = prompt("Ingrese la contraseña de edición:");
+    if (clave !== CLAVE_SEGURIDAD) {
+      alert("Contraseña incorrecta.");
+      return;
+    }
+
+    const index = gallosTorneo.findIndex(g => g.id === idGallo);
+    if (index !== -1) {
+      const g = gallosTorneo[index];
+      document.getElementById("studName").value = g.stud;
+      document.getElementById("galloName").value = g.nombre;
+      document.getElementById("weight").value = g.pesoRaw;
+      document.getElementById("tuerto").checked = g.tuerto;
+      
+      gallosTorneo.splice(index, 1);
+      renderStuds();
+    }
+  }
+
+  function renderStuds() {
+    const contenedor = document.getElementById("studList");
+    document.getElementById("totalRegistrados").innerText = `Total: ${gallosTorneo.length}`;
+
+    if (gallosTorneo.length === 0) {
+      contenedor.innerHTML = `<div class="empty">No hay ejemplares anotados en el turno.</div>`;
+      return;
+    }
+
+    let studsGroup = {};
+    gallosTorneo.forEach(g => {
+      if (!studsGroup[g.stud]) studsGroup[g.stud] = [];
+      studsGroup[g.stud].push(g);
+    });
+
+    let html = "";
+    for (let stud in studsGroup) {
+      html += `<div class="stud-card"><h3>${stud}</h3>`;
+      studsGroup[stud].forEach(g => {
+        html += `
+          <div class="gallo-item">
+            <div>
+              <span class="order-badge">#${g.orden}</span>
+              <strong>${g.nombre}</strong> — ${formatearPesoEntrada(g.pesoAbs)}
+              ${g.tuerto ? `<span class="tag-tuerto">👁️ Tuerto</span>` : ""}
+            </div>
+            <button class="btn-edit" onclick="editarGallo(${g.id})">✏️</button>
+          </div>
+        `;
+      });
+      html += `</div>`;
+    }
+    contenedor.innerHTML = html;
+  }
+
+  function analizarImparesExactos(listaActiva) {
+    let conteo = {};
+    listaActiva.forEach(g => {
+      let clave = `${g.pesoAbs}_${g.tuerto ? 'T' : 'N'}`;
+      if (!conteo[clave]) conteo[clave] = [];
+      conteo[clave].push(g);
+    });
+
+    let htmlAlerts = "";
+    let hayImpares = false;
+
+    for (let clave in conteo) {
+      let grupo = conteo[clave];
+      if (grupo.length % 2 !== 0 && grupo.length > 1) {
+        hayImpares = true;
+        let pesoLabel = formatearPesoEntrada(parseInt(clave.split("_")[0], 10));
+        let catLabel = clave.split("_")[1] === 'T' ? 'Tuertos' : 'Normales';
+        htmlAlerts += `
+          <div class="alert-card">
+            ⚠️ <strong>Grupo Impar:</strong> ${grupo.length} ejemplares de peso idéntico: <strong>${pesoLabel}</strong> (${catLabel}).
+          </div>
+        `;
+      }
+    }
+    document.getElementById("sorteoPanel").style.display = hayImpares ? "block" : "none";
+    if (hayImpares) document.getElementById("sorteoAlerts").innerHTML = htmlAlerts;
+  }
+
+  function iniciarIgualacion() {
+    if (gallosTorneo.length < 2) {
+      alert("Se requieren mínimo 2 participantes.");
+      return;
+    }
+    document.getElementById("inputPanel").style.display = "none";
+    document.getElementById("unitPanel").style.display = "none";
+    document.getElementById("participantesPanel").style.display = "none";
+    document.getElementById("resultadoPanel").style.display = "block";
+    
+    crucesDelSorteo = [];
+    analizarImparesExactos(gallosTorneo);
+    igualarPorOrdenAscendente(gallosTorneo);
+  }
+
+  function ejecutarSorteoDeImpares() {
+    crucesDelSorteo = [];
+    gallosTorneo.forEach(g => g.usado = false);
+
+    let conteo = {};
+    gallosTorneo.forEach(g => {
+      let clave = `${g.pesoAbs}_${g.tuerto ? 'T' : 'N'}`;
+      if (!conteo[clave]) conteo[clave] = [];
+      conteo[clave].push(g);
+    });
+
+    for (let clave in conteo) {
+      let grupo = conteo[clave];
+      if (grupo.length % 2 !== 0 && grupo.length > 1) {
+        let listaMezclada = [...grupo].sort(() => Math.random() - 0.5);
+        
+        // Emparejar evitando que sean del mismo Stud
+        for (let i = 0; i < listaMezclada.length; i++) {
+          let g1 = listaMezclada[i];
+          if (g1.usado) continue;
+
+          for (let j = i + 1; j < listaMezclada.length; j++) {
+            let g2 = listaMezclada[j];
+            if (g2.usado || g1.stud === g2.stud) continue; // VALIDACIÓN DE STUDS DISTINTOS
+
+            g1.usado = true;
+            g2.usado = true;
+            crucesDelSorteo.push({
+              idCruce: 'srt_' + Math.random().toString(36).substr(2, 5),
+              a: g1, b: g2, diff: 0, tipo: g1.tuerto ? "Tuerto 🆚 Tuerto" : "Normal 🆚 Normal",
+              esSorteo: true, esMixto: false
+            });
+            break;
+          }
+        }
+      }
+    }
+    document.getElementById("sorteoPanel").style.display = "none";
+    igualarPorOrdenAscendente(gallosTorneo, true);
+  }
+
+  // ALGORITMO PRINCIPAL: CRUCES POR ORDEN DE LLEGADA ENTRE STUDS DISTINTOS
+  function igualarPorOrdenAscendente(lista, vieneDeSorteo = false) {
+    actualizarTolerancia();
+    
+    if (!vieneDeSorteo) {
+      lista.forEach(g => g.usado = false);
+      peleasActuales = [];
+    } else {
+      peleasActuales = [...crucesDelSorteo];
+    }
+
+    // Ordenar lista estrictamente por orden de llegada (1, 2, 3...)
+    let colaEfectiva = [...lista].sort((a, b) => a.orden - b.orden);
+
+    for (let i = 0; i < colaEfectiva.length; i++) {
+      let g1 = colaEfectiva[i];
+      if (g1.usado) continue;
+
+      let rivalEncontrado = null;
+      let desvioRival = Infinity;
+      let esMixtoMatch = false;
+
+      // Buscar rival posterior en la lista de llegada
+      for (let j = i + 1; j < colaEfectiva.length; j++) {
+        let g2 = colaEfectiva[j];
+        
+        // REGULA CLAVE: No usados Y DE STUDS DIFERENTES
+        if (g2.usado || g1.stud.toUpperCase() === g2.stud.toUpperCase()) continue; 
+
+        // CASO A: Mismo Tipo (Normal vs Normal / Tuerto vs Tuerto)
+        if (g1.tuerto === g2.tuerto) {
+          let diff = Math.abs(g1.pesoAbs - g2.pesoAbs);
+          if (diff <= maxDiffMismaCat) {
+            rivalEncontrado = g2;
+            desvioRival = diff;
+            esMixtoMatch = false;
+            break; // Se empareja con el primer Stud distinto que esté en tolerancia
+          }
+        }
+        
+        // CASO B: Mixto (Tuerto vs Normal con ventaja)
+        if (g1.tuerto !== g2.tuerto) {
+          let tuerto = g1.tuerto ? g1 : g2;
+          let normal = g1.tuerto ? g2 : g1;
+          
+          let pesoEsperadoNormal = tuerto.pesoAbs - ventajaTuerto;
+          let desvio = Math.abs(normal.pesoAbs - pesoEsperadoNormal);
+
+          if (desvio <= maxDiffMismaCat) {
+            rivalEncontrado = g2;
+            desvioRival = Math.abs(g1.pesoAbs - g2.pesoAbs);
+            esMixtoMatch = true;
+            break;
+          }
+        }
+      }
+
+      if (rivalEncontrado) {
+        g1.usado = true;
+        rivalEncontrado.usado = true;
+
+        peleasActuales.push({
+          idCruce: 'ord_' + Math.random().toString(36).substr(2, 5),
+          a: g1,
+          b: rivalEncontrado,
+          diff: desvioRival,
+          tipo: esMixtoMatch ? "Mixto (Tuerto 🆚 Normal)" : (g1.tuerto ? "Tuerto 🆚 Tuerto" : "Normal 🆚 Normal"),
+          esSorteo: false,
+          esMixto: esMixtoMatch
+        });
+      }
+    }
+
+    sinParejaActuales = lista.filter(g => !g.usado).sort((a, b) => a.orden - b.orden);
+    renderResultadosTorneo();
+  }
+
+  function volverAEditar() {
+    document.getElementById("inputPanel").style.display = "block";
+    document.getElementById("unitPanel").style.display = "block";
+    document.getElementById("participantesPanel").style.display = "block";
+    document.getElementById("resultadoPanel").style.display = "none";
+    document.getElementById("sorteoPanel").style.display = "none";
+  }
+
+  function renderResultadosTorneo() {
+    const result = document.getElementById("result");
+    let html = `
+      <div class="summary">
+        <div class="summary-card"><strong>${peleasActuales.length}</strong><span>Peleas</span></div>
+        <div class="summary-card"><strong>${sinParejaActuales.length}</strong><span>Sin Rival</span></div>
+      </div>
+    `;
+
+    if (peleasActuales.length > 0) {
+      html += `<div class="results-grid">`;
+      peleasActuales.forEach((p) => {
+        let cardClass = p.esSorteo ? 'sorteo-sorteado' : (p.esMixto ? 'cruce-mixto' : '');
+        let unidadTexto = unidadMedida === 'lbs' ? 'oz' : 'g';
+        let badgeLabel = `Δ ${p.diff} ${unidadTexto}`;
+        
+        if (p.esSorteo) badgeLabel = 'Sorteo 🎲';
+        if (p.esMixto) badgeLabel = `Ventaja (${ventajaTuerto} ${unidadTexto}) ⚖️`;
+
+        html += `
+          <div class="match-card ${cardClass}">
+            <div class="match-head">
+              <strong>${p.tipo}</strong>
+              <span class="badge ${p.esSorteo ? 'badge-sorteo' : ''} ${p.esMixto ? 'badge-mixto' : ''}">${badgeLabel}</span>
+            </div>
+
+            <div class="fighter">
+              <div>
+                <span class="order-badge">#${p.a.orden}</span>
+                <strong>${p.a.stud}</strong> (${p.a.nombre})
+                ${p.a.tuerto ? `<span class="tag-tuerto">👁️ Tuerto</span>` : ""}
+                <br><span>Peso: ${formatearPesoEntrada(p.a.pesoAbs)}</span>
+              </div>
+            </div>
+
+            <div class="vs">VS</div>
+
+            <div class="fighter">
+              <div>
+                <span class="order-badge">#${p.b.orden}</span>
+                <strong>${p.b.stud}</strong> (${p.b.nombre})
+                ${p.b.tuerto ? `<span class="tag-tuerto">👁️ Tuerto</span>` : ""}
+                <br><span>Peso: ${formatearPesoEntrada(p.b.pesoAbs)}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+    } else {
+      html += `<div class="empty">No se encontraron rivales de otros Studs dentro de la tolerancia elegida.</div>`;
+    }
+
+    html += `<h3 style="margin-top:20px; font-size:15px;">Ejemplares Libres (Esperando Turno)</h3>`;
+    if (sinParejaActuales.length > 0) {
+      sinParejaActuales.forEach(g => {
+        html += `
+          <div class="unpaired">
+            <span class="order-badge">#${g.orden}</span>
+            <strong>${g.stud}</strong> (${g.nombre}) - Peso: ${formatearPesoEntrada(g.pesoAbs)} 
+            ${g.tuerto ? `| <span class="tag-tuerto" style="background:rgba(234,179,8,0.2); color:#fef08a; border:1px solid #eab308;">👁️ Tuerto</span>` : ''}
+          </div>
+        `;
+      });
+    } else {
+      html += `<div class="empty">¡Excelente! Todos los ejemplares fueron casados.</div>`;
+    }
+    result.innerHTML = html;
+  }
+
+  function limpiarTodoConClave() {
+    const clave = prompt("Ingrese la contraseña para restablecer la planilla:");
+    if (clave !== CLAVE_SEGURIDAD) {
+      alert("Contraseña incorrecta.");
+      return;
+    }
+    
+    gallosTorneo = []; peleasActuales = []; sinParejaActuales = []; crucesDelSorteo = [];
+    idCounter = 0;
+    numeroOrdenGlobal = 1;
+    document.getElementById("nextOrder").innerText = "1";
+    volverAEditar();
+    renderStuds();
+  }
+</script>
+</body>
+</html>
